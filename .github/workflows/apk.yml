@@ -1,0 +1,32 @@
+name: Build Offline APK
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Build Web & Android
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets --legacy-peer-deps
+          npx cap init "Ucan Fil" "com.filko.ucanfil" --web-dir=dist
+          npx cap add android
+          mkdir -p assets
+          cp icon.png assets/icon.png
+          npx capacitor-assets generate --android
+          npx cap sync
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UcanFil-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
