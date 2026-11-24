@@ -1,10 +1,8 @@
-name: Build Offline APK
+name: Build APK
 on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      CI: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -13,27 +11,21 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
-      - uses: android-actions/setup-android@v3
-      - name: Accept Licenses & Install SDK 35
-        run: yes | sdkmanager "platforms;android-35" "build-tools;35.0.0" > /dev/null 2>&1 || true
-      - name: Build Web & Android
+          java-version: '17'
+      - name: Build Game & APK
         run: |
           npm install --legacy-peer-deps
           npm run build
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 --legacy-peer-deps
-          printf '{"appId":"com.filko.ucanfil","appName":"Ucan Fil","webDir":"dist"}\n' > capacitor.config.json
-          npx cap add android
-          for dir in android/app/src/main/res/mipmap-*; do
-            cp icon.png "$dir/ic_launcher.png"
-            cp icon.png "$dir/ic_launcher_round.png"
-          done
-          rm -rf android/app/src/main/res/mipmap-anydpi-v26
-          npx cap sync
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          npm install -g cordova
+          cordova create app com.filko.ucanfil "Ucan Fil"
+          rm -rf app/www/*
+          cp -r dist/* app/www/
+          cp icon.png app/icon.png
+          sed -i 's/<\/widget>/    <icon src="icon.png" \/>\n<\/widget>/' app/config.xml
+          cd app
+          cordova platform add android
+          cordova build android
       - uses: actions/upload-artifact@v4
         with:
           name: UcanFil-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
