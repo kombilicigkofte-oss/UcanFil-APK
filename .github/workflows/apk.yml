@@ -3,6 +3,8 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CI: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -12,16 +14,21 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Accept Licenses & Install SDK 35
+        run: yes | sdkmanager "platforms;android-35" "build-tools;35.0.0" > /dev/null 2>&1 || true
       - name: Build Web & Android
         run: |
           npm install --legacy-peer-deps
           npm run build
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets --legacy-peer-deps
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 --legacy-peer-deps
           printf '{"appId":"com.filko.ucanfil","appName":"Ucan Fil","webDir":"dist"}\n' > capacitor.config.json
           npx cap add android
-          mkdir -p assets
-          cp icon.png assets/icon.png
-          npx capacitor-assets generate --android
+          for dir in android/app/src/main/res/mipmap-*; do
+            cp icon.png "$dir/ic_launcher.png"
+            cp icon.png "$dir/ic_launcher_round.png"
+          done
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
           npx cap sync
           cd android
           chmod +x gradlew
