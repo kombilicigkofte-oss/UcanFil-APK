@@ -17,7 +17,7 @@ jobs:
           npm install --legacy-peer-deps
           npm run build
           npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets --legacy-peer-deps
-          npx cap init "Ucan Fil" "com.filko.ucanfil" --web-dir=dist
+          printf '{"appId":"com.filko.ucanfil","appName":"Ucan Fil","webDir":"dist"}\n' > capacitor.config.json
           npx cap add android
           mkdir -p assets
           cp icon.png assets/icon.png
